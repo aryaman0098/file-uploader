@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./file-uploader-backend
+    container_name: file-uploader-backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    env_file:
+      - ./file-uploader-backend/.env
+    volumes:
+      - ./file-uploader-backend:/app
+      - ./firebase_config_key.json:/secrets/firebase_config_key.json:ro
+
+  db:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres-user
+      POSTGRES_PASSWORD: postgres-password
+      POSTGRES_DB: Files
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  frontend:
+    build:
+      context: ./file-uploader-frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./file-uploader-frontend:/app
+      - /app/node_modules  # Avoid overwriting node_modules
+    ports:
+      - "5173:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # Needed for live reload in some cases
+
+volumes:
+  pgdata:

@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+# Set npmking directory inside container
+WORKDIR /app
+
+# Copy only package.json + lock to install deps first (Docker cache optimization)
+COPY package*.json ./
+
+# Install deps
+RUN npm install
+
+# Copy the rest of the app (src/, tsconfig.json, etc.)
+COPY . .
+COPY .env ./
+
+# Build the TypeScript code
+RUN npm run build
+
+# Run in production mode
+CMD ["npm", "run", "start:dev"]
