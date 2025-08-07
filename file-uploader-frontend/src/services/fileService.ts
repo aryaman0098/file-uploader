@@ -1,10 +1,6 @@
 import { UserFile } from "../models/File"
 import api from "./api"
 
-const delay = (ms: number): Promise<void> => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
-
 export const getUserFiles = async (args: {
   userId?: string,
   take: number,
@@ -50,6 +46,4 @@ export const uploadFiles = async (args: {
       'Content-Type': 'multipart/form-data',
     },
   })
-
-  delay(3000)
 }
