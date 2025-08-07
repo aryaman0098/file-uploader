@@ -12,6 +12,7 @@ services:
       - ./file-uploader-backend/.env
     volumes:
       - ./file-uploader-backend:/app
+      - /app/node_modules
       - ./firebase_config_key.json:/secrets/firebase_config_key.json:ro
 
   db:
@@ -33,6 +34,7 @@ services:
     container_name: file-uploader-frontend
     volumes:
       - ./file-uploader-frontend:/app
+      - /app/node_modules 
     ports:
       - "5173:3000"
     environment:
