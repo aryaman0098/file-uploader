@@ -1,7 +1,10 @@
 import { 
   Body, 
   Controller, 
+  Delete, 
   Get, 
+  HttpCode, 
+  HttpStatus, 
   Param, 
   Post, 
   Query, 
@@ -46,7 +49,7 @@ export class FileController {
   @Get(":id")
   async getFile(
     @Param("id") fileId: string,
-    @Query("userId") userId: string
+    @Query("user-id") userId: string
   ) {
     try{
       const response = await this.fileService.getFile(fileId, userId)
@@ -56,7 +59,8 @@ export class FileController {
     }
   }
 
-  @Post('/upload')
+  @Post("/upload")
+  @HttpCode(HttpStatus.OK)
   @UseInterceptors(FilesInterceptor('files'))
   async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
@@ -72,8 +76,19 @@ export class FileController {
       const parsedData = JSON.parse(metaData);
       const uploadFilesDto = plainToInstance(UploadFilesDto, parsedData);
       await validateOrReject(uploadFilesDto);
-      const response = await this.fileService.uploadFiles(files, uploadFilesDto)
-      return true
+      await this.fileService.uploadFiles(files, uploadFilesDto)
+    } catch(e) {
+      handleError(e)
+    }
+  }
+
+  @Delete(":id")
+  async deleteFile(
+    @Param("id") fileId: string,
+    @Query("user-id") userId: string
+  ) {
+    try { 
+      await this.fileService.deleteFile(fileId, userId)
     } catch(e) {
       handleError(e)
     }

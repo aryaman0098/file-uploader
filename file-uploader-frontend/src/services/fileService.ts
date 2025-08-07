@@ -46,4 +46,17 @@ export const uploadFiles = async (args: {
       'Content-Type': 'multipart/form-data',
     },
   })
+  return response
+}
+
+export const deleteFile = async (args: {
+  fileId: string,
+  userId?: string
+}) => {
+  const apiResp = await api.delete(`/files/${args.fileId}`, {
+    params: {
+      "user-id": args.userId
+    }
+  })
+  return apiResp
 }

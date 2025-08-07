@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react"
 import Topbar from "./Topbar.components"
-import { getUserFiles, uploadFiles } from "../../services/fileService"
+import { deleteFile, getUserFiles, uploadFiles } from "../../services/fileService"
 import { auth } from "../../utils/firebase.utils"
 import { useAuth } from "../../hooks/useAuth.hook"
 import { UserFile } from "../../models/File"
 import { ReactComponent as Preview } from "../../assets/preview.svg"
 import { ReactComponent as Download } from "../../assets/download.svg"
+import { ReactComponent as Delete } from "../../assets/delete.svg"
 import UploadModal from "./UploadModal.component"
+import { HttpStatusCode } from "axios"
 
 
 const Homepage = () => {
@@ -23,12 +25,42 @@ const Homepage = () => {
 
   const [skip, setSkip] = useState(0)
 
+  useEffect(() => {
+    const fetchUserFiles = async () => {
+      if (!user || authLoading) return
+      try {
+        const response = await getUserFiles({
+          userId: user.uid,
+          take: 10,
+          skip: skip
+        })
+        if(response.length == 10) {
+          setShowLoadMore(true)
+        }
+        setFilesList(response);
+        setLoading(false)
+      } catch(e) {
+        console.error(`Error ${JSON.stringify(e)} occurred while fetching user files list`)
+        setLoading(false)
+      }
+    }
+
+    fetchUserFiles()
+  }, [user, authLoading])
+
+
   const handleUploadFile = async (files: File[]) => {
     try {
-      await uploadFiles({
+      const uploadResponse = await uploadFiles({
         files: files,
         userId: user?.uid
       })
+
+      if(uploadResponse.status != HttpStatusCode.Ok) {
+        alert("Error occurred while uploading files. Please try again.")
+        return
+      }
+
       const response = await getUserFiles({
         userId: auth.currentUser?.uid,
         take: 10,
@@ -40,6 +72,7 @@ const Homepage = () => {
       }
       setFilesList(response);
     } catch (e) {
+      alert("Error occurred while uploading files. Please try again.")
       console.error(`Error ${JSON.stringify(e)} occurred while uploading files`);
     }
   };
@@ -60,31 +93,6 @@ const Homepage = () => {
     setSkip(newSkip)
   }
 
-
-  useEffect(() => {
-    const fetchUserFiles = async () => {
-      if (!user || authLoading) return
-      try {
-        const response = await getUserFiles({
-          userId: auth.currentUser?.uid,
-          take: 10,
-          skip: skip
-        })
-        if(response.length == 10) {
-          setShowLoadMore(true)
-        }
-        setFilesList(response);
-        setLoading(false)
-      } catch(e) {
-        console.error(`Error ${JSON.stringify(e)} occurred while fetching user files list`)
-        setLoading(false)
-      }
-    }
-
-    fetchUserFiles()
-  }, [user, authLoading])
-
-
   const handleDownload = async (file: UserFile) => {
     try {
       const response = await fetch(file.downloadUrl);
@@ -99,10 +107,43 @@ const Homepage = () => {
       document.body.removeChild(link);
       
       URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error("Download failed:", err);
+    } catch (e) {
+      alert("Error occurred while downloading files. Please try again.")
+      console.error(`Error occurred while downloading files ${JSON.stringify(e)}`)
     }
   };
+
+  const handleDelete = async (file: UserFile) => {
+    try {
+      const confirmDelete = window.confirm(`Are you sure you want to delete ${file.name}`)
+      if(!confirmDelete) return
+      setLoading(true)
+      const deleteResp = await deleteFile({
+        fileId: file.id,
+        userId: user?.uid
+      })
+      if(deleteResp.status != HttpStatusCode.Ok) {
+        alert(`Error occurred while deleting file ${file.name}`)
+        setLoading(false)
+        return
+      }
+      const response = await getUserFiles({
+        userId: auth.currentUser?.uid,
+        take: 10,
+        skip: 0
+      })
+      setSkip(0)
+      if(response.length == 10) {
+        setShowLoadMore(true)
+      }
+      setFilesList(response)
+      setLoading(false)
+    } catch(e) {
+      setLoading(false)
+      alert("Error occurred while deleting file. Please try again.")
+      console.error(`Error occurred while deleting file ${JSON.stringify(e)}`)
+    }
+  }
 
   return (
     <div>
@@ -152,7 +193,8 @@ const Homepage = () => {
                         >
                           <Preview className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"/>
                         </a>
-                        <Download onClick={() => handleDownload(file)} className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"/> 
+                        <Download onClick={() => handleDownload(file)} className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"/>
+                        <Delete onClick={() => handleDelete(file)} className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"/> 
                       </td>
                     </tr>
                   ))}

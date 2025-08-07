@@ -24,9 +24,6 @@ export class FileMetaInfo {
   @Column()
   size: number
 
-  @Column({ nullable: true })
-  description: string
-
   @CreateDateColumn()
   createdAt: Date
 

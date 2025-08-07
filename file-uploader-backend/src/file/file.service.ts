@@ -108,7 +108,6 @@ export class FileService {
         mimeType: file.mimetype,
         originalName: file.originalname,
         size: file.size,
-        description: uploadFilesDto.description,
       })
 
       const filename = fileMetaInfo.id;
@@ -124,5 +123,22 @@ export class FileService {
 
       await this.fileMetaInfoRepo.insert(fileMetaInfo)
     }));
+  }
+
+  async deleteFile(fileId: string, userId: string) {
+    const dbResp = await this.fileMetaInfoRepo.delete({
+      id: fileId,
+      userId: userId
+    })
+    if(dbResp.affected == 0) {
+      throw new FileUploadError({
+        errorCode: FileUploadErrorCode.NOT_FOUND_OR_NOT_AUTHORIZED,
+        errorMessage: `Either file not found or user ${userId} not authorized to delete this file`
+      })
+    } else {
+      const bucket = this.firebaseService.getStorage()
+      await bucket.file(fileId).delete()
+      console.log("File deleted.")
+    }
   }
 }
