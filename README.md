@@ -1,15 +1,18 @@
 ## File Uploader
 
-This app is full stack app for storing files in cloud. Users can authenticate themselves using google authentication. Once authenticated, users can upload their files using this app, which are stored in Firebase. Using the app, users can preview, download or delete their files.
+This is a full-stack web application that allows users to store, preview, download, and delete files securely on the cloud. Users can authenticate themselves using google authentication. Once authenticated, users can upload their files using this app, which are stored in Firebase. Using the app, users can preview, download or delete their files.
 
-### Tech used
+### Tech stack
 
 The following tech has been used to develop this app
 
-1. [React.js](https://react.dev) (frontend)
-2. [Nest.js](https://nestjs.com) (backend)
-3. [PostgreSQL](https://www.postgresql.org) (database)
-4. [Firebase](https://firebase.google.com) (user authentication, cloud storage)
+- [React.js](https://react.dev) (Frontend)
+- [Nest.js](https://nestjs.com) (Backend)
+- [PostgreSQL](https://www.postgresql.org) (Database)
+- [Firebase](https://firebase.google.com) 
+  - Authentication
+  - Cloud Storage
+- [Docker](https://www.docker.com/) (Containerization)
 
 ### Local Setup
 
@@ -23,7 +26,7 @@ To run the app locally, we will need to fulfill some prerequisites
 
 Clone the repository to your local system. The repo consists both folders for frontend and backend applications. 
 
-We will need firebase config key file. It is used by backend for performing authenticated actions. This file can by openning you firebase project. Then go to:
+We will need firebase config key file. It is used by backend for performing authenticated actions. This file can be obtained by openning your firebase project. Then go to:
 
 `Settings > Project settings > Service accounts > Generate new private key`
 
@@ -37,7 +40,7 @@ to install all the dependencies.
 
 ##### Setting up CORS
 
-Since we will be running the locally, GCS (Firebase storage is build on top of Google Cloud Storage) will need to allow our domain. Follow the following steps
+Since the app interacts with Firebase Storage (which is built on top of Google Cloud Storage), we need to configure CORS to allow requests from localhost, since we will be running it locally. Follow the following steps
 
 Install gcloud CLI locally (for mac):
 ```
@@ -59,9 +62,9 @@ then setup the cors:
 gsutil cors set cors.json <firebase-storage-bucket-name>
 ```
 
-##### .env Files
+##### Environment Files
 
-.env file for backend is
+.env file for `backend` is
 
 ```
 DB_HOST=db
@@ -75,7 +78,7 @@ FIREBASE_STORAGE_BUCKET=
 ```
 (db credentials are already set in `docker-compose.yaml` file. Change them accordingly.)
 
-.env file for frontend is
+.env file for `frontend` is
 
 ```
 REACT_APP_API_KEY=
