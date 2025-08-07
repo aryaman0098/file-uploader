@@ -39,13 +39,9 @@ const Homepage = () => {
           setShowLoadMore(false)
         }
 
-        setFilesList(prev =>
-          skip === 0 ? response : [...prev, ...response]
-        )
+        setFilesList(prev => skip === 0 ? response : [...prev, ...response])
       } catch (e) {
-        console.error(
-          `Error ${JSON.stringify(e)} occurred while fetching user files list`
-        )
+        alert("Error occured while fetching files. Please refresh.")
       } finally {
         setLoading(false)
       }
@@ -70,9 +66,6 @@ const Homepage = () => {
       setRefreshList(prev => prev + 1)
     } catch (e) {
       alert("Error occurred while uploading files. Please try again.")
-      console.error(
-        `Error ${JSON.stringify(e)} occurred while uploading files`
-      )
     }
   }
 
@@ -96,9 +89,6 @@ const Homepage = () => {
       URL.revokeObjectURL(blobUrl)
     } catch (e) {
       alert("Error occurred while downloading files. Please try again.")
-      console.error(
-        `Error occurred while downloading files ${JSON.stringify(e)}`
-      )
     }
   }
 
@@ -123,7 +113,6 @@ const Homepage = () => {
       setRefreshList(prev => prev + 1)
     } catch (e) {
       alert("Error occurred while deleting file. Please try again.")
-      console.error(`Error occurred while deleting file ${JSON.stringify(e)}`)
     }
   }
 
