@@ -71,7 +71,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onUpload }) => {
           </button>
           <button
             onClick={handleUploadClick}
-            disabled={selectedFiles.length == 0 || isUploading}
+            disabled={selectedFiles.length === 0 || isUploading}
             className="px-4 py-2 bg-green-600 rounded hover:bg-green-500 disabled:opacity-50"
           >
             {isUploading ? 'Uploading...' : 'Upload'}
