@@ -1,6 +1,5 @@
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { HttpException, HttpStatus, UnauthorizedException } from "@nestjs/common";
 import { FileUploadError } from "../customError";
-import { ValidationError } from "class-validator";
 import { FileUploadErrorCode } from "../file/enums/FileUploadErrorCodes.enum";
 
 export const handleError = (error: any) : HttpException => {
@@ -11,17 +10,13 @@ export const handleError = (error: any) : HttpException => {
         message: error.errorMessage
       }
     }, error.status ?? HttpStatus.BAD_REQUEST)
-  } else if (Array.isArray(error) && error.every(e => e instanceof ValidationError)) {
-    const message = error.map((e) => {
-                      const constraints = Object.values(e.constraints).join(', ');
-                      return `Property '${e.property}': ${constraints}`;
-                    }).join('\n');
+  } else if (error instanceof UnauthorizedException) {
     throw new HttpException({
       error: {
-        code: FileUploadErrorCode.VALIDATION_ERROR,
-        message: message,
-      },
-    }, HttpStatus.BAD_REQUEST,)
+        code: FileUploadErrorCode.NOT_AUTHORIZED,
+        message: error.message
+      }
+    }, HttpStatus.FORBIDDEN)
   } else {
     console.error(error)
     throw new HttpException({

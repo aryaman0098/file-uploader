@@ -1,8 +1,9 @@
 import { 
   Injectable, 
   OnModuleInit 
-} from '@nestjs/common';
-import * as admin from 'firebase-admin';
+} from '@nestjs/common'
+import * as admin from 'firebase-admin'
+import { getAuth } from 'firebase-admin/auth'
 
 
 @Injectable()
@@ -16,5 +17,18 @@ export class FirebaseService implements OnModuleInit {
 
   getStorage() {
     return admin.storage().bucket();
+  }
+
+  getAuth() {
+    return getAuth()
+  }
+
+  async verifyToken(idToken: string) {
+    try {
+      const decoded = await this.getAuth().verifyIdToken(idToken);
+      return decoded;
+    } catch (err) {
+      throw new Error('Invalid or expired Firebase token');
+    }
   }
 }

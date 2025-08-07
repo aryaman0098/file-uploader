@@ -91,7 +91,7 @@ export class FileService {
     return dbResp
   }
 
-  async uploadFiles(files: Express.Multer.File[], uploadFilesDto: UploadFilesDto) {
+  async uploadFiles(files: Express.Multer.File[], userId: string) {
     const bucket = this.firebaseService.getStorage()
     
     await Promise.all(files.map(async (file) => {
@@ -104,7 +104,7 @@ export class FileService {
 
       const fileMetaInfo = new FileMetaInfo({
         id: uuidv4(),
-        userId: uploadFilesDto.userId,
+        userId: userId,
         mimeType: file.mimetype,
         originalName: file.originalname,
         size: file.size,

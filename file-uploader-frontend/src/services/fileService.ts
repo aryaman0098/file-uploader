@@ -2,18 +2,15 @@ import { UserFile } from "../models/File"
 import api from "./api"
 
 export const getUserFiles = async (args: {
-  userId?: string,
   take: number,
   skip: number
 }): Promise<UserFile[]> => {
   const apiResp = await api.get("/files", {
     params: {
-      "user-id": args.userId,
       take: args.take,
       skip: args.skip
     }
   })
-
   const response = apiResp.data.map((e: any) => {
     return new UserFile({
       id: e.id,
@@ -28,19 +25,16 @@ export const getUserFiles = async (args: {
       updatedAt: new Date(e.updatedAt)
     })
   })
-
   return response
 }
 
 export const uploadFiles = async (args: {
   files: File[],
-  userId?: string
 }) => {
   const formData = new FormData()
   args.files.forEach((file) => {
     formData.append('files', file)
   });
-  formData.append('meta-data', JSON.stringify({userId: args.userId}));
   const response = await api.post('/files/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -51,12 +45,7 @@ export const uploadFiles = async (args: {
 
 export const deleteFile = async (args: {
   fileId: string,
-  userId?: string
 }) => {
-  const apiResp = await api.delete(`/files/${args.fileId}`, {
-    params: {
-      "user-id": args.userId
-    }
-  })
+  const apiResp = await api.delete(`/files/${args.fileId}`)
   return apiResp
 }

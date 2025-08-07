@@ -1,5 +1,4 @@
 import { 
-  Body, 
   Controller, 
   Delete, 
   Get, 
@@ -8,19 +7,20 @@ import {
   Param, 
   Post, 
   Query, 
+  Req, 
   UploadedFiles, 
+  UseGuards, 
   UseInterceptors 
 } from '@nestjs/common';
 import { FileService } from './file.service';
 import { FileMetaInfo } from './entities/fileMetaInfo.entity';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { UploadFilesDto } from './dto/uploadFiles.dto';
 import { handleError } from '../utils/handleError';
 import { FileUploadError } from '../customError';
 import { FileUploadErrorCode } from './enums/FileUploadErrorCodes.enum';
-import { plainToInstance } from 'class-transformer';
-import { validateOrReject } from 'class-validator';
 import { CustomParseIntPipe } from '../utils/customParsers';
+import { FirebaseAuthGuard } from '../auth/authGuard';
+import { CurrentUserId } from '../auth/decorator';
 
 @Controller('files')
 export class FileController {
@@ -28,8 +28,9 @@ export class FileController {
   constructor(private readonly fileService: FileService) {}
 
   @Get()
+  @UseGuards(FirebaseAuthGuard)
   async getUserFiles(
-    @Query('user-id') userId: string,
+    @CurrentUserId() userId: string,
     @Query('take', CustomParseIntPipe) take: number,
     @Query('skip', CustomParseIntPipe) skip: number
   ): Promise<FileMetaInfo[]> {
@@ -47,9 +48,10 @@ export class FileController {
   }
 
   @Get(":id")
+  @UseGuards(FirebaseAuthGuard)
   async getFile(
+    @CurrentUserId() userId: string,
     @Param("id") fileId: string,
-    @Query("user-id") userId: string
   ) {
     try{
       const response = await this.fileService.getFile(fileId, userId)
@@ -61,10 +63,11 @@ export class FileController {
 
   @Post("/upload")
   @HttpCode(HttpStatus.OK)
+  @UseGuards(FirebaseAuthGuard)
   @UseInterceptors(FilesInterceptor('files'))
   async uploadFiles(
+    @CurrentUserId() userId: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('meta-data') metaData: string
   ) {
     try {
       if(files.length > 10) {
@@ -73,19 +76,17 @@ export class FileController {
           errorMessage: "Maximum 10 files allowed for upload at a time"
         })
       }
-      const parsedData = JSON.parse(metaData);
-      const uploadFilesDto = plainToInstance(UploadFilesDto, parsedData);
-      await validateOrReject(uploadFilesDto);
-      await this.fileService.uploadFiles(files, uploadFilesDto)
+      await this.fileService.uploadFiles(files, userId)
     } catch(e) {
       handleError(e)
     }
   }
 
   @Delete(":id")
+  @UseGuards(FirebaseAuthGuard)
   async deleteFile(
-    @Param("id") fileId: string,
-    @Query("user-id") userId: string
+    @CurrentUserId() userId: string,
+    @Param("id") fileId: string
   ) {
     try { 
       await this.fileService.deleteFile(fileId, userId)

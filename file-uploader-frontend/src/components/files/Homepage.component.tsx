@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react"
 import Topbar from "./Topbar.components"
-import { deleteFile, getUserFiles, uploadFiles } from "../../services/fileService"
-import { auth } from "../../utils/firebase.utils"
+import {
+  deleteFile,
+  getUserFiles,
+  uploadFiles,
+} from "../../services/fileService"
 import { useAuth } from "../../hooks/useAuth.hook"
 import { UserFile } from "../../models/File"
 import { ReactComponent as Preview } from "../../assets/preview.svg"
@@ -10,136 +13,115 @@ import { ReactComponent as Delete } from "../../assets/delete.svg"
 import UploadModal from "./UploadModal.component"
 import { HttpStatusCode } from "axios"
 
-
 const Homepage = () => {
-
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth()
 
   const [loading, setLoading] = useState(true)
-
-  const [filesList, setFilesList] =useState<UserFile[]>([])
-
+  const [filesList, setFilesList] = useState<UserFile[]>([])
   const [showUploadModal, setShowUploadModal] = useState(false)
-
   const [showLoadMore, setShowLoadMore] = useState(false)
-
   const [skip, setSkip] = useState(0)
+  const [refreshList, setRefreshList] = useState(0)
 
   useEffect(() => {
     const fetchUserFiles = async () => {
       if (!user || authLoading) return
       try {
+        setLoading(true)
         const response = await getUserFiles({
-          userId: user.uid,
           take: 10,
-          skip: skip
+          skip: skip,
         })
-        if(response.length == 10) {
+
+        if (response.length === 10) {
           setShowLoadMore(true)
+        } else {
+          setShowLoadMore(false)
         }
-        setFilesList(response);
-        setLoading(false)
-      } catch(e) {
-        console.error(`Error ${JSON.stringify(e)} occurred while fetching user files list`)
+
+        setFilesList(prev =>
+          skip === 0 ? response : [...prev, ...response]
+        )
+      } catch (e) {
+        console.error(
+          `Error ${JSON.stringify(e)} occurred while fetching user files list`
+        )
+      } finally {
         setLoading(false)
       }
     }
 
     fetchUserFiles()
-  }, [user, authLoading])
-
+  }, [user, authLoading, skip, refreshList])
 
   const handleUploadFile = async (files: File[]) => {
     try {
       const uploadResponse = await uploadFiles({
         files: files,
-        userId: user?.uid
       })
 
-      if(uploadResponse.status != HttpStatusCode.Ok) {
+      if (uploadResponse.status !== HttpStatusCode.Ok) {
         alert("Error occurred while uploading files. Please try again.")
         return
       }
 
-      const response = await getUserFiles({
-        userId: auth.currentUser?.uid,
-        take: 10,
-        skip: 0
-      })
+      setFilesList([])
       setSkip(0)
-      if(response.length == 10) {
-        setShowLoadMore(true)
-      }
-      setFilesList(response);
+      setRefreshList(prev => prev + 1)
     } catch (e) {
       alert("Error occurred while uploading files. Please try again.")
-      console.error(`Error ${JSON.stringify(e)} occurred while uploading files`);
+      console.error(
+        `Error ${JSON.stringify(e)} occurred while uploading files`
+      )
     }
-  };
+  }
 
-  const handleLoadMore = async () => {
-    const newSkip = skip + 10
-    const response = await getUserFiles({
-      userId: auth.currentUser?.uid,
-      take: 10,
-      skip: newSkip
-    })
-    if(response.length == 10) {
-        setShowLoadMore(true)
-    } else {
-      setShowLoadMore(false)
-    }
-    setFilesList(prev => [...prev, ...response]);
-    setSkip(newSkip)
+  const handleLoadMore = () => {
+    setSkip(prev => prev + 10)
   }
 
   const handleDownload = async (file: UserFile) => {
     try {
-      const response = await fetch(file.downloadUrl);
-      const blob = await response.blob();
+      const response = await fetch(file.downloadUrl)
+      const blob = await response.blob()
 
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = file.name || 'downloaded_file';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      URL.revokeObjectURL(blobUrl);
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = blobUrl
+      link.download = file.name || "downloaded_file"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      URL.revokeObjectURL(blobUrl)
     } catch (e) {
       alert("Error occurred while downloading files. Please try again.")
-      console.error(`Error occurred while downloading files ${JSON.stringify(e)}`)
+      console.error(
+        `Error occurred while downloading files ${JSON.stringify(e)}`
+      )
     }
-  };
+  }
 
   const handleDelete = async (file: UserFile) => {
     try {
-      const confirmDelete = window.confirm(`Are you sure you want to delete ${file.name}`)
-      if(!confirmDelete) return
-      setLoading(true)
+      const confirmDelete = window.confirm(
+        `Are you sure you want to delete ${file.name}?`
+      )
+      if (!confirmDelete) return
+
       const deleteResp = await deleteFile({
         fileId: file.id,
-        userId: user?.uid
       })
-      if(deleteResp.status != HttpStatusCode.Ok) {
+
+      if (deleteResp.status !== HttpStatusCode.Ok) {
         alert(`Error occurred while deleting file ${file.name}`)
-        setLoading(false)
         return
       }
-      const response = await getUserFiles({
-        userId: auth.currentUser?.uid,
-        take: 10,
-        skip: 0
-      })
+
+      setFilesList([])
       setSkip(0)
-      if(response.length == 10) {
-        setShowLoadMore(true)
-      }
-      setFilesList(response)
-      setLoading(false)
-    } catch(e) {
-      setLoading(false)
+      setRefreshList(prev => prev + 1)
+    } catch (e) {
       alert("Error occurred while deleting file. Please try again.")
       console.error(`Error occurred while deleting file ${JSON.stringify(e)}`)
     }
@@ -147,16 +129,16 @@ const Homepage = () => {
 
   return (
     <div>
-      <div className="px-4 sm:px-7 py-10 max-w-screen overflow-x-hidden">  
-        <Topbar onUploadClick={() => setShowUploadModal(true)}/>
+      <div className="px-4 sm:px-7 py-10 max-w-screen overflow-x-hidden">
+        <Topbar onUploadClick={() => setShowUploadModal(true)} />
       </div>
 
-    {showUploadModal && (
-      <UploadModal
-        onClose={() => setShowUploadModal(false)}
-        onUpload={handleUploadFile}
-      />
-    )}
+      {showUploadModal && (
+        <UploadModal
+          onClose={() => setShowUploadModal(false)}
+          onUpload={handleUploadFile}
+        />
+      )}
 
       {loading ? (
         <div className="flex justify-center mt-10">
@@ -179,38 +161,48 @@ const Homepage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filesList.map((file: UserFile) => (
-                    <tr key={file.id} className="border-b border-gray-700 hover:bg-gray-800">
+                  {filesList.map(file => (
+                    <tr
+                      key={file.id}
+                      className="border-b border-gray-700 hover:bg-gray-800"
+                    >
                       <td className="p-3">{file.name}</td>
-                      <td className="p-3">{(file.size / 1024).toFixed(2)} KB</td>
+                      <td className="p-3">
+                        {(file.size / 1024).toFixed(2)} KB
+                      </td>
                       <td className="p-3">{file.mimeType}</td>
-                      <td className="p-3">{new Date(file.createdAt).toLocaleString()}</td>
+                      <td className="p-3">
+                        {new Date(file.createdAt).toLocaleString()}
+                      </td>
                       <td className="p-3 flex gap-6 justify-center">
                         <a
                           href={file.signedUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <Preview className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"/>
+                          <Preview className="w-10 h-10 transition-transform duration-200 transform hover:scale-125" />
                         </a>
-                        <Download onClick={() => handleDownload(file)} className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"/>
-                        <Delete onClick={() => handleDelete(file)} className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"/> 
+                        <Download
+                          onClick={() => handleDownload(file)}
+                          className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"
+                        />
+                        <Delete
+                          onClick={() => handleDelete(file)}
+                          className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"
+                        />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              
-              {showLoadMore &&
+
+              {showLoadMore && (
                 <div className="flex justify-center mt-5">
-                 <p 
-                    onClick={handleLoadMore}
-                    className="text-white"
-                  >
+                  <p onClick={handleLoadMore} className="text-white cursor-pointer">
                     Load more
                   </p>
                 </div>
-              }
+              )}
             </div>
           )}
         </div>
