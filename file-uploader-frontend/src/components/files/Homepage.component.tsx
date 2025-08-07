@@ -15,9 +15,13 @@ const Homepage = () => {
 
   const [loading, setLoading] = useState(true)
 
-  const [filesList, setFilesList] =useState([])
+  const [filesList, setFilesList] =useState<UserFile[]>([])
 
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false)
+
+  const [showLoadMore, setShowLoadMore] = useState(false)
+
+  const [skip, setSkip] = useState(0)
 
   const handleUploadFile = async (files: File[]) => {
     try {
@@ -30,13 +34,33 @@ const Homepage = () => {
         take: 10,
         skip: 0
       })
+      setSkip(0)
+      if(response.length == 10) {
+        setShowLoadMore(true)
+      }
       setFilesList(response);
     } catch (e) {
       console.error(`Error ${JSON.stringify(e)} occurred while uploading files`);
     }
   };
 
-  
+  const handleLoadMore = async () => {
+    const newSkip = skip + 10
+    const response = await getUserFiles({
+      userId: auth.currentUser?.uid,
+      take: 10,
+      skip: newSkip
+    })
+    if(response.length == 10) {
+        setShowLoadMore(true)
+    } else {
+      setShowLoadMore(false)
+    }
+    setFilesList(prev => [...prev, ...response]);
+    setSkip(newSkip)
+  }
+
+
   useEffect(() => {
     const fetchUserFiles = async () => {
       if (!user || authLoading) return
@@ -44,8 +68,11 @@ const Homepage = () => {
         const response = await getUserFiles({
           userId: auth.currentUser?.uid,
           take: 10,
-          skip: 0
+          skip: skip
         })
+        if(response.length == 10) {
+          setShowLoadMore(true)
+        }
         setFilesList(response);
         setLoading(false)
       } catch(e) {
@@ -131,6 +158,17 @@ const Homepage = () => {
                   ))}
                 </tbody>
               </table>
+              
+              {showLoadMore &&
+                <div className="flex justify-center mt-5">
+                 <p 
+                    onClick={handleLoadMore}
+                    className="text-white"
+                  >
+                    Load more
+                  </p>
+                </div>
+              }
             </div>
           )}
         </div>

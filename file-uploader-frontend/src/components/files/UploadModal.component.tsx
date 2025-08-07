@@ -17,6 +17,10 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onUpload }) => {
 
   const handleUploadClick = async () => {
     if (!selectedFiles) return;
+    if(selectedFiles.length > 10) {
+      alert(`Atmost 10 files are allowed to upload at a time`)
+      return
+    }
     setIsUploading(true);
     try {
       await onUpload(selectedFiles);

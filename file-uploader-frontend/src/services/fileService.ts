@@ -5,7 +5,7 @@ export const getUserFiles = async (args: {
   userId?: string,
   take: number,
   skip: number
-}) => {
+}): Promise<UserFile[]> => {
   const apiResp = await api.get("/files", {
     params: {
       "user-id": args.userId,
