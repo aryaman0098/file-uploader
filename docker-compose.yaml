@@ -30,9 +30,9 @@ services:
     build:
       context: ./file-uploader-frontend
       dockerfile: Dockerfile
+    container_name: file-uploader-frontend
     volumes:
       - ./file-uploader-frontend:/app
-      - /app/node_modules
     ports:
       - "5173:3000"
     environment:
