@@ -10,6 +10,9 @@ import { FirebaseService } from "../firebase/firebase.service"
 export class FirebaseAuthGuard implements CanActivate {
   constructor(private readonly firebaseService: FirebaseService) {}
 
+  /**
+   * Verify the bearer token in each api request for user
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
     const authHeader = req.headers['authorization']

@@ -9,7 +9,6 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { supportedMimeTypes } from './enums/MimeType.enum';
 import { FileUploadError } from '../customError';
 import { FileUploadErrorCode } from './enums/FileUploadErrorCodes.enum';
-import { UploadFilesDto } from './dto/uploadFiles.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -21,6 +20,10 @@ export class FileService {
     private readonly firebaseService: FirebaseService
   ) {}
 
+  /**
+   * Get meta info of the file from postgresql
+   * Get signed and download url from firebase, each having a validity for 15 mins
+   */
   async getUserFiles(
     userId: string, 
     paginationInfo: {
@@ -48,7 +51,7 @@ export class FileService {
       });
       const [downloadUrl] = await file.getSignedUrl({
         action: 'read',
-        expires: Date.now() + 1000 * 60 * 15, 
+        expires: Date.now() + 1000 * 60 * 15, // 15 minutes from now
         responseDisposition: `attachment; filename="${e.originalName}"`
       });
       e.signedUrl = signedUrl
@@ -91,6 +94,10 @@ export class FileService {
     return dbResp
   }
 
+  /**
+   * Store the meta info of file in postgresql
+   * Upload the file to firebase storage
+   */
   async uploadFiles(files: Express.Multer.File[], userId: string) {
     const bucket = this.firebaseService.getStorage()
     
