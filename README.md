@@ -100,3 +100,8 @@ docker compose up
 will spin up the database, backend and frontend applications.
 
 The app can be viewed at `http://localhost:5173`
+
+Here are some screenshots of the app
+
+![Login Page](assets/images/login.png)
+![Home Page](assets/images/homepage.png)
