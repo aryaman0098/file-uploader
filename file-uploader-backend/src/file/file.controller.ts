@@ -129,7 +129,6 @@ export class FileController {
     @Body() shareFileDto: ShareFileDto
   ) {
     try {
-      console.log(email)
       await this.fileService.shareFile(email, fileId, shareFileDto)
     } catch(e) {
       handleError(e)

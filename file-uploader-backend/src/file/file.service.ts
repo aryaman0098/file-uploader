@@ -55,7 +55,7 @@ export class FileService {
         userId: userId
       },
       order: {
-        createrAt: "desc"
+        createdAt: "desc"
       }
     })
 

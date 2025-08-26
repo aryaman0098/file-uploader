@@ -2,10 +2,12 @@ import {
   Column, 
   CreateDateColumn, 
   Entity, 
-  PrimaryGeneratedColumn 
+  PrimaryGeneratedColumn, 
+  Unique
 } from "typeorm";
 
 @Entity({name: "SharedFile"})
+@Unique(["userId", "fileId"])
 export class SharedFile {
 
   @PrimaryGeneratedColumn('uuid')
@@ -21,7 +23,7 @@ export class SharedFile {
   userId: string
 
   @CreateDateColumn()
-  createrAt: Date
+  createdAt: Date
 
   constructor(instance: Partial<SharedFile>) {
     Object.assign(this, instance)
