@@ -9,6 +9,7 @@ export class UserFile {
   updatedAt!: Date
   signedUrl!: string
   downloadUrl!: string
+  isShared!: boolean
 
   constructor(instance: Partial<UserFile>) {
     Object.assign(this, instance)

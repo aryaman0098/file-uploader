@@ -21,6 +21,7 @@ export const getUserFiles = async (args: {
       signedUrl: e.signedUrl,
       downloadUrl: e.downloadUrl,
       size: e.size,
+      isShared: e.isShared,
       createdAt: new Date(e.createdAt),
       updatedAt: new Date(e.updatedAt)
     })
@@ -47,5 +48,20 @@ export const deleteFile = async (args: {
   fileId: string,
 }) => {
   const apiResp = await api.delete(`/files/${args.fileId}`)
+  return apiResp
+}
+
+export const shareFiles = async (args: {
+  fileId: string,
+  email: string
+}) => {
+  const apiResp = await api.post(`files/${args.fileId}/share`, {
+    email: args.email
+  })
+  return apiResp
+}
+
+export const createUser = async () => {
+  const apiResp = await api.post("user")
   return apiResp
 }

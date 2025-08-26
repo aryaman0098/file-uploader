@@ -4,12 +4,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FileMetaInfo } from './entities/fileMetaInfo.entity';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { FirebaseService } from '../firebase/firebase.service';
 import { supportedMimeTypes } from './enums/MimeType.enum';
 import { FileUploadError } from '../customError';
 import { FileUploadErrorCode } from './enums/FileUploadErrorCodes.enum';
 import { v4 as uuidv4 } from 'uuid';
+import { SharedFile } from './entities/sharedFiles.entity';
+import { ShareFileDto } from './dto/shareFile.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class FileService {
@@ -17,6 +20,11 @@ export class FileService {
   constructor(
     @InjectRepository(FileMetaInfo)
     private fileMetaInfoRepo: Repository<FileMetaInfo>,
+
+    @InjectRepository(SharedFile)
+    private sharedFilesRepo: Repository<SharedFile>,
+
+    private readonly userService: UserService,
     private readonly firebaseService: FirebaseService
   ) {}
 
@@ -32,7 +40,8 @@ export class FileService {
   }) {
     const dbResp = await this.fileMetaInfoRepo.find({
       where: {
-        userId: userId
+        userId: userId,
+        softDeleted: false
       },
       order: {
         updatedAt: "desc"
@@ -41,9 +50,30 @@ export class FileService {
       skip: paginationInfo.skip
     })
 
+    const sharedFilesInfo = await this.sharedFilesRepo.find({
+      where: {
+        userId: userId
+      },
+      order: {
+        createrAt: "desc"
+      }
+    })
+
+    const sharedFiles = await Promise.all(sharedFilesInfo.map(async(e) => {
+      const resp = await this.fileMetaInfoRepo.findOne({
+        where: {
+          id: e.fileId
+        }
+      })
+      resp.isShared = true
+      return resp
+    }))
+
+    const files = dbResp.concat(sharedFiles)
+
     const bucket = this.firebaseService.getStorage()
 
-    await Promise.all(dbResp.map(async (e) => {
+    await Promise.all(files.map(async (e) => {
       const file = bucket.file(e.id);
       const [signedUrl] = await file.getSignedUrl({
         action: 'read',
@@ -56,9 +86,10 @@ export class FileService {
       });
       e.signedUrl = signedUrl
       e.downloadUrl = downloadUrl
+      e.isShared = (!e.isShared) ? false : true
     }))
 
-    return dbResp
+    return files
   }
 
   async getFile(fileId: string, userId: string) {
@@ -115,6 +146,7 @@ export class FileService {
         mimeType: file.mimetype,
         originalName: file.originalname,
         size: file.size,
+        softDeleted: false
       })
 
       const filename = fileMetaInfo.id;
@@ -133,19 +165,92 @@ export class FileService {
   }
 
   async deleteFile(fileId: string, userId: string) {
-    const dbResp = await this.fileMetaInfoRepo.delete({
-      id: fileId,
-      userId: userId
+    const dbResp = await this.fileMetaInfoRepo.findOne({
+      where: {
+        id: fileId,
+        userId: userId
+      }
     })
-    if(dbResp.affected == 0) {
+    if(!dbResp) {
       throw new FileUploadError({
         errorCode: FileUploadErrorCode.NOT_FOUND_OR_NOT_AUTHORIZED,
         errorMessage: `Either file not found or user ${userId} not authorized to delete this file`
       })
     } else {
-      const bucket = this.firebaseService.getStorage()
-      await bucket.file(fileId).delete()
-      console.log("File deleted.")
+      const response = await this.fileMetaInfoRepo.update({
+        id: fileId
+      }, {
+        softDeleted: true
+      })
+
+      return response
     }
+  }
+
+  async restoreFile(fileId: string, userId: string) {
+    const dbResp = await this.fileMetaInfoRepo.findOne({
+      where: {
+        id: fileId,
+        userId: userId
+      }
+    })
+    if(!dbResp) {
+      throw new FileUploadError({
+        errorCode: FileUploadErrorCode.NOT_FOUND_OR_NOT_AUTHORIZED,
+        errorMessage: `Either file not found or user ${userId} not authorized to delete this file`
+      })
+    } else {
+      const response = await this.fileMetaInfoRepo.update({
+        id: fileId
+      }, {
+        softDeleted: false
+      })
+      return response
+    }
+  }
+
+  async deleteOldDeletedFiles() {
+    const currDate = new Date()
+    const fifteenDaysBack = new Date(currDate.getDate() - 15)
+    const files = await this.fileMetaInfoRepo.find({
+      where: {
+        softDeleted: true,
+        updatedAt: LessThan(fifteenDaysBack )
+      }
+    })
+    
+    await Promise.all(files.map(async (f) => {
+      const bucket = this.firebaseService.getStorage()
+      await bucket.file(f.id).delete()
+
+      await this.fileMetaInfoRepo.delete({
+        id: f.id
+      })
+
+      console.log("File deleted.")
+    }))
+  }
+
+  async shareFile(
+    email:string, 
+    fileId: string, 
+    shareFileDto: ShareFileDto
+  ) {
+
+    const userResp = await this.userService.getUserIdFromEmail(shareFileDto.email)
+
+    if(!userResp) {
+      throw new FileUploadError({
+        errorCode: FileUploadErrorCode.USER_NOT_FOUND,
+        errorMessage: `User withe email ${shareFileDto.email} not found`
+      })
+    }
+
+    const dbResp = await this.sharedFilesRepo.insert({
+      id: shareFileDto.id,
+      fileId: fileId,
+      userId: userResp.id,
+      ownerEmail: email
+    })
   }
 }

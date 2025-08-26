@@ -3,6 +3,7 @@ import Topbar from "./Topbar.components"
 import {
   deleteFile,
   getUserFiles,
+  shareFiles,
   uploadFiles,
 } from "../../services/fileService"
 import { useAuth } from "../../hooks/useAuth.hook"
@@ -10,8 +11,10 @@ import { UserFile } from "../../models/File"
 import { ReactComponent as Preview } from "../../assets/preview.svg"
 import { ReactComponent as Download } from "../../assets/download.svg"
 import { ReactComponent as Delete } from "../../assets/delete.svg"
+import { ReactComponent as Share } from "../../assets/share.svg"
 import UploadModal from "./UploadModal.component"
 import { HttpStatusCode } from "axios"
+import ShareModal from "./ShareModal.component"
 
 const Homepage = () => {
   const { user, loading: authLoading } = useAuth()
@@ -19,9 +22,11 @@ const Homepage = () => {
   const [loading, setLoading] = useState(true)
   const [filesList, setFilesList] = useState<UserFile[]>([])
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [showLoadMore, setShowLoadMore] = useState(false)
   const [skip, setSkip] = useState(0)
   const [refreshList, setRefreshList] = useState(0)
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchUserFiles = async () => {
@@ -66,6 +71,17 @@ const Homepage = () => {
       setRefreshList(prev => prev + 1)
     } catch (e) {
       alert("Error occurred while uploading files. Please try again.")
+    }
+  }
+
+  const handleShareFile = async (email: string) => {
+    try {
+      await shareFiles({
+        fileId: selectedFileId!!,
+        email: email
+      })
+    } catch(e) {
+      alert("Error occurred while sharing file")
     }
   }
 
@@ -129,6 +145,13 @@ const Homepage = () => {
         />
       )}
 
+      {showShareModal && (
+        <ShareModal
+          onClose={() => setShowShareModal(false)}
+          onShare={handleShareFile}
+        />
+      )}
+
       {loading ? (
         <div className="flex justify-center mt-10">
           <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
@@ -146,6 +169,7 @@ const Homepage = () => {
                     <th className="p-3">Size</th>
                     <th className="p-3">Type</th>
                     <th className="p-3">Uploaded on</th>
+                    <th className="p-3">Share</th>
                     <th className="p-3 text-center rounded-tr-lg">Actions</th>
                   </tr>
                 </thead>
@@ -155,13 +179,22 @@ const Homepage = () => {
                       key={file.id}
                       className="border-b border-gray-700 hover:bg-gray-800"
                     >
-                      <td className="p-3">{file.name}</td>
+                      <td className="p-3">{file.name} {file.isShared ? " - [Shared]" : ""}</td>
                       <td className="p-3">
                         {(file.size / 1024).toFixed(2)} KB
                       </td>
                       <td className="p-3">{file.mimeType}</td>
                       <td className="p-3">
                         {new Date(file.createdAt).toLocaleString()}
+                      </td>
+                      <td>
+                        <Share 
+                          onClick={() => {
+                            setSelectedFileId(file.id)
+                            setShowShareModal(true)
+                          }} 
+                          className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"
+                        />
                       </td>
                       <td className="p-3 flex gap-6 justify-center">
                         <a
@@ -175,10 +208,13 @@ const Homepage = () => {
                           onClick={() => handleDownload(file)}
                           className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"
                         />
-                        <Delete
-                          onClick={() => handleDelete(file)}
-                          className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"
-                        />
+                        {
+                          !file.isShared &&
+                          <Delete
+                            onClick={() => handleDelete(file)}
+                            className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"
+                          />
+                        }
                       </td>
                     </tr>
                   ))}

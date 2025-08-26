@@ -12,6 +12,7 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '../utils/firebase.utils';
+import { createUser } from '../services/fileService';
 
 interface AuthContextType {
   user: User | null;
@@ -28,9 +29,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
-        const unsubscribe = onAuthStateChanged(auth, currentUser => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
           setUser(currentUser);
           setLoading(false);
+          if(currentUser) {
+            try {
+              await createUser();
+            } catch (err) {
+              console.error("Error creating user in backend:", err);
+            }
+          }
         });
         return () => unsubscribe();
       })

@@ -30,9 +30,14 @@ export class FileMetaInfo {
   @UpdateDateColumn()
   updatedAt: Date
 
+  @Column({ type: Boolean, nullable: true })
+  softDeleted: Boolean
+
   signedUrl: string
 
   downloadUrl: string
+
+  isShared: Boolean
 
   constructor(instance: Partial<FileMetaInfo>) {
     Object.assign(this, instance)

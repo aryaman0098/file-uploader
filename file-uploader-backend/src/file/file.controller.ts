@@ -1,4 +1,5 @@
 import { 
+  Body,
   Controller, 
   Delete, 
   Get, 
@@ -7,7 +8,6 @@ import {
   Param, 
   Post, 
   Query, 
-  Req, 
   UploadedFiles, 
   UseGuards, 
   UseInterceptors 
@@ -20,7 +20,8 @@ import { FileUploadError } from '../customError';
 import { FileUploadErrorCode } from './enums/FileUploadErrorCodes.enum';
 import { CustomParseIntPipe } from '../utils/customParsers';
 import { FirebaseAuthGuard } from '../auth/authGuard';
-import { CurrentUserId } from '../auth/decorator';
+import { CurrentUserEmail, CurrentUserId } from '../auth/decorator';
+import { ShareFileDto } from './dto/shareFile.dto';
 
 @Controller('files')
 export class FileController {
@@ -46,6 +47,7 @@ export class FileController {
       return []
     }
   }
+
 
   @Get(":id")
   @UseGuards(FirebaseAuthGuard)
@@ -89,7 +91,46 @@ export class FileController {
     @Param("id") fileId: string
   ) {
     try { 
-      await this.fileService.deleteFile(fileId, userId)
+      const resp = await this.fileService.deleteFile(fileId, userId)
+      return resp
+    } catch(e) {
+      handleError(e)
+    }
+  }
+
+  @Post(":id/restore")
+  @UseGuards(FirebaseAuthGuard)
+  async restoreFile(
+    @CurrentUserId() userId: string,
+    @Param("id") fileId: string
+  ) {
+    try {
+      const resp = await this.fileService.restoreFile(fileId, userId)
+      return resp
+    } catch(e) {
+      handleError(e)
+    }
+  }
+
+  @Post("delete-old-files")
+  async deleteOldFiles() {
+    try {
+      await this.fileService.deleteOldDeletedFiles()
+    } catch(e) {
+      handleError(e)
+    }
+  }
+
+  @Post(":id/share")
+  @UseGuards(FirebaseAuthGuard)
+  async shareFile(
+    @CurrentUserEmail() email: string,
+    @Param("id") fileId: string,
+    @Body() shareFileDto: ShareFileDto
+  ) {
+    try {
+      console.log(email)
+      await this.fileService.shareFile(email, fileId, shareFileDto)
     } catch(e) {
       handleError(e)
     }

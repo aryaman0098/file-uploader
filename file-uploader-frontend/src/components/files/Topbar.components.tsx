@@ -7,7 +7,6 @@ interface TopbarProps {
   onUploadClick: () => void;
 }
 
-
 export const Topbar = ({ onUploadClick }: TopbarProps) => {
   const { user, logout } = useAuth()
 
@@ -26,8 +25,9 @@ export const Topbar = ({ onUploadClick }: TopbarProps) => {
 
   return (
     <nav className="w-full flex items-center justify-between px-6 py-3 text-white shadow">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col items-start gap-2">
         <span className="text-2xl font-semibold">File Uploader</span>
+        <span className="text-base">Hi, {user?.displayName}!</span>
       </div>
 
       <div className="ml-auto flex items-center gap-4">
