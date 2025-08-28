@@ -183,6 +183,11 @@ export class FileService {
         softDeleted: true
       })
 
+
+      await this.sharedFilesRepo.delete({
+        fileId: fileId
+      })
+
       return response
     }
   }
