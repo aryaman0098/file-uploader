@@ -65,3 +65,30 @@ export const createUser = async () => {
   const apiResp = await api.post("user")
   return apiResp
 }
+
+export const searchFiles = async (args: {
+  name?: string,
+  fileType?: string,
+  uploadedOn?: Date
+}) => {
+  const apiResp = await api.post("/files/search", {
+    name: args.name,
+    fileType: args.fileType
+  })
+  const response = apiResp.data.map((e: any) => {
+    return new UserFile({
+      id: e.id,
+      userId: e.userId,
+      description: e.description,
+      mimeType: e.mimeType,
+      name: e.originalName,
+      signedUrl: e.signedUrl,
+      downloadUrl: e.downloadUrl,
+      size: e.size,
+      isShared: e.isShared,
+      createdAt: new Date(e.createdAt),
+      updatedAt: new Date(e.updatedAt)
+    })
+  })
+  return response
+}

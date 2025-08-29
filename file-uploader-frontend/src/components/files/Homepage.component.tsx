@@ -3,6 +3,7 @@ import Topbar from "./Topbar.components"
 import {
   deleteFile,
   getUserFiles,
+  searchFiles,
   shareFiles,
   uploadFiles,
 } from "../../services/fileService"
@@ -27,6 +28,16 @@ const Homepage = () => {
   const [skip, setSkip] = useState(0)
   const [refreshList, setRefreshList] = useState(0)
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
+  const [searchFileName, setSearchFileName] = useState<string>("")
+  const [selectedType, setSelectedType] = useState<string | null>(null)
+
+  const fileTypes: Record<string, string> = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    jpg: "image/jpg",
+    jpeg: "image/jpeg"
+  }
 
   useEffect(() => {
     const fetchUserFiles = async () => {
@@ -83,6 +94,24 @@ const Homepage = () => {
     } catch(e) {
       alert("Error occurred while sharing file")
     }
+  }
+
+
+  const handleSearchButtonPressed = async () => {
+    if(searchFileName == "" && selectedType == null) {
+      return 
+    }
+    try {
+      setLoading(true)
+      const response = await searchFiles({
+        name: searchFileName == "" ? undefined : searchFileName,
+        fileType: selectedType!
+      })
+      setFilesList(response)
+      setLoading(false)
+    } catch(e) {
+      alert("Error occurred while searching files")
+    } 
   }
 
   const handleLoadMore = () => {
@@ -158,6 +187,63 @@ const Homepage = () => {
         </div>
       ) : (
         <div className="p-4">
+
+          <div className="flex flex-col items-center">
+
+            <div className="relative w-72 mb-4">
+              <input
+                type="text"
+                placeholder="Search File Name"
+                value={searchFileName}
+                onChange={(e) => setSearchFileName(e.target.value)}
+                className="w-full p-2 pr-8 rounded bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              {(searchFileName || selectedType) && (
+                <button
+                  onClick={() => {
+                    setSearchFileName("")
+                    setSelectedType(null)   
+                    setFilesList([])        
+                    setSkip(0)
+                    setRefreshList(prev => prev + 1) 
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2 flex-wrap justify-center mt-1 mb-5">
+              {Object.keys(fileTypes).map(type => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    if(fileTypes[type] == selectedType) {
+                      setSelectedType(null)
+                    } else {
+                      setSelectedType(fileTypes[type])
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-md text-sm transition-colors 
+                    ${selectedType === fileTypes[type] 
+                      ? "bg-green-600 text-white hover:bg-green-500" 
+                      : "bg-gray-700 text-white hover:bg-gray-600"}`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleSearchButtonPressed}
+              className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500"
+            >
+              Search
+            </button>
+          </div>
+
           {filesList.length === 0 ? (
             <p className="text-white text-center mt-8">No files found.</p>
           ) : (

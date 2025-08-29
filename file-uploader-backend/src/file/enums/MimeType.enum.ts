@@ -6,6 +6,8 @@ export enum MimeType {
   MP4 = "video/mp4",
   JSON = "application/json",
   TEXT = "text/plain",
+  DOC = "application/msword",
+  DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 }
 
 export const supportedMimeTypes = [

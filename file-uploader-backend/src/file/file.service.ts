@@ -4,7 +4,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FileMetaInfo } from './entities/fileMetaInfo.entity';
-import { LessThan, Repository } from 'typeorm';
+import { 
+  DataSource, 
+  LessThan, 
+  Repository ,
+  ILike
+} from 'typeorm';
 import { FirebaseService } from '../firebase/firebase.service';
 import { supportedMimeTypes } from './enums/MimeType.enum';
 import { FileUploadError } from '../customError';
@@ -13,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SharedFile } from './entities/sharedFiles.entity';
 import { ShareFileDto } from './dto/shareFile.dto';
 import { UserService } from '../user/user.service';
+import { SearchParamsDto } from './dto/searchParam.dto';
 
 @Injectable()
 export class FileService {
@@ -25,7 +31,8 @@ export class FileService {
     private sharedFilesRepo: Repository<SharedFile>,
 
     private readonly userService: UserService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly dataSource: DataSource
   ) {}
 
   /**
@@ -38,42 +45,40 @@ export class FileService {
       take: number, 
       skip: number
   }) {
-    const dbResp = await this.fileMetaInfoRepo.find({
-      where: {
-        userId: userId,
-        softDeleted: false
-      },
-      order: {
-        updatedAt: "desc"
-      },
-      take: paginationInfo.take,
-      skip: paginationInfo.skip
-    })
+    const queryManager = await this.dataSource.createQueryRunner()
+    let dbResp
+    try {
+      dbResp = await queryManager.query(
+        `
+          select * 
+          from "FileMetaInfo"
+          where "userId" = $1 and "softDeleted"=false
 
-    const sharedFilesInfo = await this.sharedFilesRepo.find({
-      where: {
-        userId: userId
-      },
-      order: {
-        createdAt: "desc"
-      }
-    })
+          union all
 
-    const sharedFiles = await Promise.all(sharedFilesInfo.map(async(e) => {
-      const resp = await this.fileMetaInfoRepo.findOne({
-        where: {
-          id: e.fileId
-        }
-      })
-      resp.isShared = true
-      return resp
-    }))
+          select f.*
+          from "FileMetaInfo" f
+          inner join "SharedFile" s on f.id = s."fileId"::uuid
+          where s."userId" = $1 and "softDeleted"=false
 
-    const files = dbResp.concat(sharedFiles)
-
+          order by "updatedAt" desc
+          limit $2 offset $3
+        `,
+        [
+          userId,
+          paginationInfo.take,
+          paginationInfo.skip
+        ]
+      )
+    } catch(e) {
+      console.error(`Error ${e} occurred while fetching user files`)
+    } finally {
+      await queryManager.release()
+    }
+    
     const bucket = this.firebaseService.getStorage()
 
-    await Promise.all(files.map(async (e) => {
+    await Promise.all(dbResp.map(async (e) => {
       const file = bucket.file(e.id);
       const [signedUrl] = await file.getSignedUrl({
         action: 'read',
@@ -86,10 +91,10 @@ export class FileService {
       });
       e.signedUrl = signedUrl
       e.downloadUrl = downloadUrl
-      e.isShared = (!e.isShared) ? false : true
+      e.isShared = e.userId != userId
     }))
 
-    return files
+    return dbResp
   }
 
   async getFile(fileId: string, userId: string) {
@@ -257,5 +262,50 @@ export class FileService {
       userId: userResp.id,
       ownerEmail: email
     })
+  }
+
+  async searchFiles(
+    searchParams: SearchParamsDto,
+    userId: string
+  ) {
+    if(!searchParams.fileType && !searchParams.name) {
+      throw new FileUploadError({
+        errorCode: FileUploadErrorCode.INVALID_SEARCH_PARAMS,
+        errorMessage: "Search params are invalid"
+      })
+    }
+    let query = {
+      userId: userId,
+      softDeleted: false
+    }
+    if(searchParams.name) {
+      query["originalName"] = ILike(`%${searchParams.name}%`) //ILike to make search check insensitive
+    }
+    if(searchParams.fileType) {
+      query["mimeType"] = searchParams.fileType
+    }
+    const dbResp = await this.fileMetaInfoRepo.find({
+      where: query
+    })
+
+    const bucket = this.firebaseService.getStorage()
+
+    await Promise.all(dbResp.map(async (e) => {
+      const file = bucket.file(e.id);
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 1000 * 60 * 15, // 15 minutes from now
+      });
+      const [downloadUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 1000 * 60 * 15, // 15 minutes from now
+        responseDisposition: `attachment; filename="${e.originalName}"`
+      });
+      e.signedUrl = signedUrl
+      e.downloadUrl = downloadUrl
+      e.isShared = e.userId != userId
+    }))
+
+    return dbResp
   }
 }

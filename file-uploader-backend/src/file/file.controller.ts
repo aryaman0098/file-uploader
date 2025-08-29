@@ -22,6 +22,7 @@ import { CustomParseIntPipe } from '../utils/customParsers';
 import { FirebaseAuthGuard } from '../auth/authGuard';
 import { CurrentUserEmail, CurrentUserId } from '../auth/decorator';
 import { ShareFileDto } from './dto/shareFile.dto';
+import { SearchParamsDto } from './dto/searchParam.dto';
 
 @Controller('files')
 export class FileController {
@@ -130,6 +131,20 @@ export class FileController {
   ) {
     try {
       await this.fileService.shareFile(email, fileId, shareFileDto)
+    } catch(e) {
+      handleError(e)
+    }
+  }
+
+  @Post("/search")
+  @UseGuards(FirebaseAuthGuard)
+  async searchFiles(
+    @CurrentUserId() userId: string,
+    @Body() searchParams: SearchParamsDto
+  ) {
+    try {
+      const response = await this.fileService.searchFiles(searchParams, userId)
+      return response
     } catch(e) {
       handleError(e)
     }

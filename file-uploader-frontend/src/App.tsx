@@ -9,6 +9,7 @@ import Homepage from './components/files/Homepage.component';
 import { AuthProvider } from './context/Auth.context';
 import ProtectedRoute from './components/protected-route/ProtectedRoute.component';
 import { useAuth } from './hooks/useAuth.hook';
+import { useEffect } from 'react';
 
 const RootRedirect = () => {
   const { user, loading } = useAuth()
@@ -17,6 +18,11 @@ const RootRedirect = () => {
 };
 
 const App = () => {
+
+  useEffect(() => {
+    document.title = "File Uploader"
+  }, [])
+
   return (
     <Router>
       <AuthProvider>
