@@ -161,6 +161,26 @@ const Homepage = () => {
     }
   }
 
+  const handleFileTypeClick = async (type: string) => {
+    if(fileTypes[type] == selectedType) {
+      setSelectedType(null)
+      setSelectedType(null)   
+      setFilesList([])        
+      setSkip(0)
+      setRefreshList(prev => prev + 1) 
+    } else {
+      const newType = fileTypes[type]
+      setSelectedType(newType)
+      setLoading(true)
+      const response = await searchFiles({
+        name: searchFileName == "" ? undefined : searchFileName,
+        fileType: newType
+      })
+      setFilesList(response)
+      setLoading(false)
+    }
+  }
+
   return (
     <div>
       <div className="px-4 sm:px-7 py-10 max-w-screen overflow-x-hidden">
@@ -219,13 +239,7 @@ const Homepage = () => {
               {Object.keys(fileTypes).map(type => (
                 <button
                   key={type}
-                  onClick={() => {
-                    if(fileTypes[type] == selectedType) {
-                      setSelectedType(null)
-                    } else {
-                      setSelectedType(fileTypes[type])
-                    }
-                  }}
+                  onClick={() => handleFileTypeClick(type)}
                   className={`px-3 py-1 rounded-md text-sm transition-colors 
                     ${selectedType === fileTypes[type] 
                       ? "bg-green-600 text-white hover:bg-green-500" 
