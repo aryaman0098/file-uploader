@@ -207,57 +207,63 @@ const Homepage = () => {
         </div>
       ) : (
         <div className="p-4">
-
           <div className="flex flex-col items-center">
+            {/* Search box */}
+            <div className="flex items-center w-72 gap-2 mb-4">
+              {/* Input with X inside */}
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  placeholder="Search File Name"
+                  value={searchFileName}
+                  onChange={(e) => setSearchFileName(e.target.value)}
+                  className="w-full p-2 pr-8 rounded bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {(searchFileName || selectedType) && (
+                  <button
+                    onClick={() => {
+                      setSearchFileName("");
+                      setSelectedType(null);
+                      setFilesList([]);
+                      setSkip(0);
+                      setRefreshList((prev) => prev + 1);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-            <div className="relative w-72 mb-4">
-              <input
-                type="text"
-                placeholder="Search File Name"
-                value={searchFileName}
-                onChange={(e) => setSearchFileName(e.target.value)}
-                className="w-full p-2 pr-8 rounded bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-
-              {(searchFileName || selectedType) && (
-                <button
-                  onClick={() => {
-                    setSearchFileName("")
-                    setSelectedType(null)   
-                    setFilesList([])        
-                    setSkip(0)
-                    setRefreshList(prev => prev + 1) 
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white"
-                >
-                  ✕
-                </button>
-              )}
+              {/* Search button */}
+              <button
+                onClick={handleSearchButtonPressed}
+                className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500"
+              >
+                Search
+              </button>
             </div>
 
+            {/* File type filters */}
             <div className="flex gap-2 flex-wrap justify-center mt-1 mb-5">
-              {Object.keys(fileTypes).map(type => (
+              {Object.keys(fileTypes).map((type) => (
                 <button
                   key={type}
                   onClick={() => handleFileTypeClick(type)}
                   className={`px-3 py-1 rounded-md text-sm transition-colors 
-                    ${selectedType === fileTypes[type] 
-                      ? "bg-green-600 text-white hover:bg-green-500" 
-                      : "bg-gray-700 text-white hover:bg-gray-600"}`}
+                    ${
+                      selectedType === fileTypes[type]
+                        ? "bg-green-600 text-white hover:bg-green-500"
+                        : "bg-gray-700 text-white hover:bg-gray-600"
+                    }`}
                 >
                   {type}
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={handleSearchButtonPressed}
-              className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500"
-            >
-              Search
-            </button>
           </div>
 
+          {/* File list */}
           {filesList.length === 0 ? (
             <p className="text-white text-center mt-8">No files found.</p>
           ) : (
@@ -274,12 +280,14 @@ const Homepage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filesList.map(file => (
+                  {filesList.map((file) => (
                     <tr
                       key={file.id}
                       className="border-b border-gray-700 hover:bg-gray-800"
                     >
-                      <td className="p-3">{file.name} {file.isShared ? " - [Shared]" : ""}</td>
+                      <td className="p-3">
+                        {file.name} {file.isShared ? " - [Shared]" : ""}
+                      </td>
                       <td className="p-3">
                         {(file.size / 1024).toFixed(2)} KB
                       </td>
@@ -288,11 +296,11 @@ const Homepage = () => {
                         {new Date(file.createdAt).toLocaleString()}
                       </td>
                       <td>
-                        <Share 
+                        <Share
                           onClick={() => {
-                            setSelectedFileId(file.id)
-                            setShowShareModal(true)
-                          }} 
+                            setSelectedFileId(file.id);
+                            setShowShareModal(true);
+                          }}
                           className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"
                         />
                       </td>
@@ -308,13 +316,12 @@ const Homepage = () => {
                           onClick={() => handleDownload(file)}
                           className="w-10 h-10 transition-transform duration-200 transform hover:scale-125"
                         />
-                        {
-                          !file.isShared &&
+                        {!file.isShared && (
                           <Delete
                             onClick={() => handleDelete(file)}
                             className="w-8 h-8 transition-transform duration-200 transform hover:scale-125"
                           />
-                        }
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -323,7 +330,10 @@ const Homepage = () => {
 
               {showLoadMore && (
                 <div className="flex justify-center mt-5">
-                  <p onClick={handleLoadMore} className="text-white cursor-pointer">
+                  <p
+                    onClick={handleLoadMore}
+                    className="text-white cursor-pointer"
+                  >
                     Load more
                   </p>
                 </div>
@@ -333,7 +343,7 @@ const Homepage = () => {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export default Homepage
