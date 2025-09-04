@@ -39,7 +39,7 @@ export const Topbar = ({ onUploadClick }: TopbarProps) => {
         <div className='relative'>
           {user?.photoURL ? (
             <img
-              src={user.photoURL || "../../assets/default-avatar.png"}
+              src={user.photoURL || "/assets/default-avatar.png"}
               alt="User"
               className="w-10 h-10 rounded-full border-2 border-white"
               onClick={toggleDropdown}
