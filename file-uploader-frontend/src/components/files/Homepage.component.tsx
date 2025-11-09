@@ -208,9 +208,7 @@ const Homepage = () => {
       ) : (
         <div className="p-4">
           <div className="flex flex-col items-center">
-            {/* Search box */}
             <div className="flex items-center w-72 gap-2 mb-4">
-              {/* Input with X inside */}
               <div className="relative w-full">
                 <input
                   type="text"

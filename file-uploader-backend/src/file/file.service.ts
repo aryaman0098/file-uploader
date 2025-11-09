@@ -256,7 +256,7 @@ export class FileService {
       })
     }
 
-    const dbResp = await this.sharedFilesRepo.insert({
+    await this.sharedFilesRepo.insert({
       id: shareFileDto.id,
       fileId: fileId,
       userId: userResp.id,
@@ -268,9 +268,6 @@ export class FileService {
     searchParams: SearchParamsDto,
     userId: string
   ) {
-
-    console.log(searchParams)
-
     if(!searchParams.fileType && !searchParams.name) {
       throw new FileUploadError({
         errorCode: FileUploadErrorCode.INVALID_SEARCH_PARAMS,
